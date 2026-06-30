@@ -3,10 +3,6 @@ import QuestionsView from "./components/QuestionsView";
 import ResultView from "./components/ResultView";
 import LoadingState from "./components/LoadingState";
 
-import { createEmbedding } from "./utils/createEmbedding";
-import { searchMovies } from "./utils/searchMovies";
-import { generateExplanation } from "./utils/generateExplanation";
-
 import "./App.css";
 
 function App() {
@@ -20,45 +16,39 @@ function App() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // 🔥 prevent double clicks / duplicate API calls
     if (loading) return;
 
     setLoading(true);
     setError("");
 
     try {
-      const preferences = `
-Favorite: ${favoriteMovie}
-Mood: ${mood}
-Tone: ${tone}
-      `;
+      const preferences = {
+        favoriteMovie,
+        mood,
+        tone,
+      };
 
-      const embedding = await createEmbedding(preferences);
+      const response = await fetch(
+        "https://popchoice-worker.pollyglot-zahra.workers.dev",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(preferences),
+        },
+      );
 
-      if (!embedding) {
-        throw new Error("Embedding failed");
+      if (!response.ok) {
+        throw new Error("Worker request failed");
       }
 
-      const movie = await searchMovies(embedding);
+      const data = await response.json();
 
-      if (!movie) {
-        throw new Error("No movie found in database");
-      }
-
-      const explanation = await generateExplanation(preferences, movie);
-
-      if (!explanation) {
-        throw new Error("AI explanation failed");
-      }
-
-      setResult({ movie, explanation });
+      setResult(data);
     } catch (err) {
       console.log("ERROR:", err);
-
-      setError(
-        err?.message ||
-          "Something went wrong (API limit or server error). Try again.",
-      );
+      setError(err.message || "Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }
