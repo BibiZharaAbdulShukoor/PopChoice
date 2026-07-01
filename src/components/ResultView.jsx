@@ -1,4 +1,13 @@
 function ResultView({ result, goAgain }) {
+  if (!result || !result.movie) {
+    return (
+      <section className="card result">
+        <p>Loading result...</p>
+        <button onClick={goAgain}>Try Again</button>
+      </section>
+    );
+  }
+
   return (
     <section className="card result">
       <p className="badge">YOUR RESULT</p>
